@@ -5,6 +5,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# local editor/tooling config
+.claude/
+
 # local test output / build artifacts
 test/out/
 dist/

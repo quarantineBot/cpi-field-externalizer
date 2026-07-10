@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>iFlow Field Externalizer — demo</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #cfd8e3; display: flex; align-items: center; justify-content: center; min-height: 100vh; font: 13px/1.4 -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+      /* record THIS box (920 x 560) */
+      .stage { position: relative; width: 920px; height: 560px; background: #eef1f5; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+
+      /* faux SAP editor backdrop */
+      .topbar { height: 40px; background: #354a5f; color: #fff; display: flex; align-items: center; padding: 0 16px; font-weight: 600; font-size: 13px; gap: 10px; }
+      .topbar .dot { width: 10px; height: 10px; border-radius: 50%; background: #6b8; }
+      .crumb { color: #b9c4d0; font-weight: 400; font-size: 12px; }
+      .canvas { position: absolute; inset: 40px 0 0 0; background:
+        radial-gradient(circle at 20% 40%, #e3e9f1 0 2px, transparent 2px) 0 0/26px 26px,
+        #f4f6fa; }
+      .flow { position: absolute; top: 120px; left: 60px; right: 60px; display: flex; align-items: center; gap: 0; opacity: .85; }
+      .node { width: 92px; height: 58px; background: #fff; border: 1.5px solid #b7c2d0; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 11px; color: #445; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+      .wire { flex: 1; height: 0; border-top: 2px dashed #a7b3c2; }
+      .cap { position: absolute; top: 60px; left: 0; right: 0; text-align: center; color: #33475b; font-size: 15px; font-weight: 600; }
+
+      /* floating launcher */
+      .fab { position: absolute; right: 22px; bottom: 22px; background: #0a6ed1; color: #fff; border-radius: 7px; padding: 11px 15px; font-weight: 700; font-size: 13px; box-shadow: 0 3px 12px rgba(0,0,0,.35); transition: transform .12s ease; }
+      .fab.pulse { animation: pulse 1s ease; }
+      .fab.press { transform: scale(.9); }
+      @keyframes pulse { 0%,100% { box-shadow: 0 3px 12px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 0 10px rgba(10,110,209,.25); } }
+
+      /* dialog */
+      .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .3s ease; }
+      .backdrop.in { opacity: 1; }
+      .dialog { position: absolute; top: 66px; left: 50%; transform: translateX(-50%) scale(.96); width: 720px; background: #fff; border-radius: 9px; overflow: hidden; box-shadow: 0 16px 50px rgba(0,0,0,.4); opacity: 0; transition: opacity .3s ease, transform .3s ease; }
+      .dialog.in { opacity: 1; transform: translateX(-50%) scale(1); }
+      .dhead { background: #0a6ed1; color: #fff; padding: 12px 16px; font-weight: 700; display: flex; justify-content: space-between; }
+      .dbody { padding: 12px 16px; }
+      .info { color: #333; margin: 2px 0 10px; }
+      .chk { font-size: 12px; color: #555; margin-bottom: 8px; }
+      table { width: 100%; border-collapse: collapse; }
+      th { text-align: left; font-size: 11px; color: #667; border-bottom: 2px solid #e3e7ec; padding: 5px 6px; }
+      td { padding: 7px 6px; border-bottom: 1px solid #eef1f4; vertical-align: top; font-size: 12px; }
+      tr.row { opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; }
+      tr.row.in { opacity: 1; transform: none; }
+      tr.row.hot { background: #eaf3ff; }
+      .box { width: 15px; height: 15px; border: 1.5px solid #9aa7b5; border-radius: 3px; display: inline-block; position: relative; transition: background .15s, border-color .15s; }
+      .box.on { background: #0a6ed1; border-color: #0a6ed1; }
+      .box.on::after { content: "✓"; color: #fff; font-size: 11px; position: absolute; left: 2px; top: -2px; }
+      .pname { font: 12px ui-monospace, Consolas, monospace; background: #f5f7f9; border: 1px solid #e2e7ec; border-radius: 4px; padding: 2px 6px; }
+      .where b { color: #33475b; } .where small { color: #8a93a0; font-family: ui-monospace, monospace; }
+      .val { font: 11px ui-monospace, Consolas, monospace; color: #333; }
+      .why { color: #0a6ed1; font-size: 11px; } .why.man { color: #98a2ad; }
+      .dfoot { padding: 11px 16px; border-top: 1px solid #eef1f4; display: flex; justify-content: flex-end; }
+      .apply { background: #107e3e; color: #fff; border-radius: 6px; padding: 9px 16px; font-weight: 700; font-size: 13px; transition: transform .12s ease, filter .12s; }
+      .apply.press { transform: scale(.94); filter: brightness(1.1); }
+
+      /* success toast */
+      .toast { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); background: #182a3a; color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13.5px; font-weight: 600; opacity: 0; transition: opacity .3s ease, transform .3s ease; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+      .toast .g { color: #4ad07d; }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="topbar"><span class="dot"></span> Integration Suite <span class="crumb">— Demo_OrderSync · edit</span></div>
+      <div class="canvas">
+        <div class="cap">Externalize hardcoded iFlow fields in seconds</div>
+        <div class="flow">
+          <div class="node">HTTPS<br />Sender</div><div class="wire"></div>
+          <div class="node">Content<br />Modifier</div><div class="wire"></div>
+          <div class="node">OData<br />Receiver</div>
+        </div>
+      </div>
+
+      <div class="fab" id="fab">⧉ Externalize fields</div>
+
+      <div class="backdrop" id="backdrop"></div>
+      <div class="dialog" id="dialog">
+        <div class="dhead"><span>iFlow Field Externalizer</span><span>✕</span></div>
+        <div class="dbody">
+          <div class="info">Demo_OrderSync — 9 constant field(s) found. Detected ones are pre-ticked; tick any others.</div>
+          <div class="chk">☑ Show all constant fields (not just auto-detected)</div>
+          <table>
+            <thead><tr><th>On</th><th>Parameter name</th><th>Where</th><th>Value</th><th>Why</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="dfoot"><span class="apply" id="apply">Apply</span></div>
+      </div>
+
+      <div class="toast" id="toast"><span class="g">✓</span> Externalized 4 field(s) — reloading the editor…</div>
+    </div>
+
+    <script>
+      const ROWS = [
+        { on: 1, name: 'TargetSystemUrl', where: ['Content Modifier · property', 'targetSystemUrl'], val: 'https://api.demo-erp.example.com/v1', why: 'URL / endpoint', man: false },
+        { on: 1, name: 'OData_address', where: ['OData · adapter', 'address'], val: 'https://erp.demo.example.com/…/API_DEMO_SRV/', why: 'Host / address', man: false },
+        { on: 1, name: 'OData_alias', where: ['OData · adapter', 'alias'], val: 'DEMO_ODATA_CRED', why: 'Credential', man: false },
+        { on: 0, name: 'OData_scc_location_id', where: ['OData · adapter', 'scc_location_id'], val: 'demo-cloud-connector', why: 'Location', man: false, tick: true },
+        { on: 0, name: 'Content_Type', where: ['Content Modifier · header', 'Content-Type'], val: 'application/json', why: 'manual', man: true },
+      ];
+      const rowsEl = document.getElementById('rows');
+      ROWS.forEach((r, i) => {
+        const tr = document.createElement('tr'); tr.className = 'row'; tr.id = 'r' + i;
+        tr.innerHTML =
+          `<td><span class="box ${r.on ? 'on' : ''}" id="b${i}"></span></td>` +
+          `<td><span class="pname">${r.name}</span></td>` +
+          `<td class="where"><b>${r.where[0]}</b><br><small>${r.where[1]}</small></td>` +
+          `<td class="val">${r.val}</td>` +
+          `<td class="why ${r.man ? 'man' : ''}">${r.why}</td>`;
+        rowsEl.appendChild(tr);
+      });
+
+      const $ = (id) => document.getElementById(id);
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const cls = (el, c, on) => el.classList[on ? 'add' : 'remove'](c);
+
+      async function loop() {
+        // reset
+        $('dialog').classList.remove('in'); $('backdrop').classList.remove('in');
+        $('toast').classList.remove('show'); $('apply').classList.remove('press');
+        ROWS.forEach((r, i) => { $('r' + i).classList.remove('in', 'hot'); $('b' + i).className = 'box ' + (r.on ? 'on' : ''); });
+        $('fab').classList.remove('press');
+        await sleep(700);
+
+        $('fab').classList.add('pulse'); await sleep(1000);
+        $('fab').classList.add('press'); await sleep(180);
+        $('fab').classList.remove('pulse', 'press');
+
+        $('backdrop').classList.add('in'); $('dialog').classList.add('in'); await sleep(350);
+        for (let i = 0; i < ROWS.length; i++) { $('r' + i).classList.add('in'); await sleep(160); }
+        await sleep(500);
+
+        // user ticks the location-id row
+        $('r3').classList.add('hot'); await sleep(300);
+        $('b3').classList.add('on'); await sleep(700);
+        $('r3').classList.remove('hot');
+
+        // apply
+        $('apply').classList.add('press'); await sleep(220); $('apply').classList.remove('press');
+        $('dialog').classList.remove('in'); $('backdrop').classList.remove('in');
+        await sleep(250);
+        $('toast').classList.add('show'); await sleep(1900);
+        $('toast').classList.remove('show');
+        await sleep(700);
+        loop();
+      }
+      loop();
+    </script>
+  </body>
+</html>

@@ -29,7 +29,9 @@ Dashboard → **Add new item** → upload the zip. Then complete:
 - **Category:** Developer Tools
 - **Icon:** `icons/icon128.png` (store shows 128px). **Screenshots:** 1280×800 or 640×400 —
   capture the review dialog on an iFlow and the Configure screen with the new parameters
-  (use a demo/throwaway iFlow — **no client data**).
+  (use a demo/throwaway iFlow — **no client data**). For an animated demo (e.g. a launch-post
+  GIF), open `tools/demo.html` — it self-plays the whole flow with safe demo values; screen-
+  record that box with any recorder (ScreenToGif on Windows works well).
 - **Privacy policy URL:** your hosted `docs/index.html` (e.g. the GitHub Pages URL above).
 
 ### Privacy tab (paste these verbatim)
