@@ -1,19 +1,22 @@
 /*
- * iFlow Field Externalizer
- * A plugin for a compatible CPI browser-helper extension's plugin framework.
+ * iFlow Field Externalizer — content script.
+ *
+ * Runs as a standalone Chrome extension (bundled with vendor/jszip.min.js + the engine), and
+ * ALSO works as a plugin for a compatible CPI browser-helper extension when one is present
+ * (registers on its `pluginList` and reuses its showToast/workingIndicator/cpiData/JSZip).
+ * Every host global is optional and guarded, so neither mode depends on the other.
  *
  * Two ways to externalize the current iFlow's hardcoded fields (URLs, hosts, credentials,
  * ports, paths) into {{parameters}}, with a review step:
  *
  *   • Live (in place)  — reads the open iFlow's editor model via the same-origin design API
- *                        (your session), rewrites Content Modifier header/property values to
+ *                        (your session), rewrites Content Modifier + adapter values to
  *                        externalized parameters, saves back to the SAME artifact, and
  *                        reloads the editor. No export/import.
  *   • Exported zip     — offline path: load an exported .iflw zip, review, download the
- *                        externalized zip (uses the host's JSZip).
+ *                        externalized zip.
  *
  * Requires the engine (src/engine/engine.js) loaded first (exposes __CpixEngine).
- * Reuses host globals when present (showToast, workingIndicator, cpiData, JSZip).
  * Self-contained; no build step, no external references.
  */
 (function () {
@@ -238,24 +241,46 @@
     renderHome(ui, detectCtx(cpi));
   }
 
-  // ---- launchers -----------------------------------------------------------
-  function injectFloatingLauncher() {
-    if (document.getElementById('iflowFieldExt-fab')) return;
-    const fab = el('button', { id: 'iflowFieldExt-fab', type: 'button', textContent: '⧉ Externalize fields' }, { position: 'fixed', right: '18px', bottom: '18px', zIndex: '2147483646', padding: '10px 14px', background: '#0a6ed1', color: '#fff', border: 'none', borderRadius: '6px', font: '600 13px Arial, sans-serif', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,.35)' });
-    fab.onclick = () => openDialog(host.cpiData());
-    const add = () => { if (document.body && !document.getElementById('iflowFieldExt-fab')) document.body.appendChild(fab); };
-    if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
+  // ---- launcher ------------------------------------------------------------
+  // Only show the floating button on an iFlow editor page, and keep it in sync as the user
+  // navigates the SAPUI5 single-page app (which fires no reliable route event).
+  function isIflowEditor() {
+    const s = location.hash + ' ' + location.href;
+    return /integrationflows?\/[^/?#\s]+/i.test(s) || /artifacts\/[^/?#\s]+/i.test(s);
+  }
+  let fabEl = null;
+  function syncLauncher() {
+    if (!document.body) return;
+    const present = document.getElementById('iflowFieldExt-fab');
+    if (isIflowEditor()) {
+      if (present) return;
+      if (!fabEl) {
+        fabEl = el('button', { id: 'iflowFieldExt-fab', type: 'button', textContent: '⧉ Externalize fields' },
+          { position: 'fixed', right: '18px', bottom: '18px', zIndex: '2147483646', padding: '10px 14px', background: '#0a6ed1', color: '#fff', border: 'none', borderRadius: '6px', font: '600 13px Arial, sans-serif', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,.35)' });
+        fabEl.onclick = () => openDialog(host.cpiData());
+      }
+      document.body.appendChild(fabEl);
+    } else if (present) {
+      present.remove();
+    }
+  }
+  function startLauncher() {
+    syncLauncher();
+    window.addEventListener('hashchange', syncLauncher);
+    window.addEventListener('popstate', syncLauncher);
+    setInterval(syncLauncher, 1500);
   }
 
+  // Register with a host CPI-helper framework if one is present (optional, dual-use).
   if (host.hasFramework) {
     try {
       pluginList.push({
-        metadataVersion: '1.0.0', id: PLUGIN_ID, name: 'iFlow Field Externalizer', version: '0.4.0',
+        metadataVersion: '1.0.0', id: PLUGIN_ID, name: 'iFlow Field Externalizer', version: '1.0.0',
         description: 'Externalize hardcoded Content Modifier and adapter fields (URLs, hosts, credentials, location IDs, ports, paths) to {{parameters}} in place, with a review step.',
         settings: {},
         messageSidebarContent: { onRender: (cpi) => { const b = el('button', { textContent: '⧉ Externalize iFlow fields' }, { padding: '6px 10px', background: '#0a6ed1', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', font: '600 12px Arial, sans-serif' }); b.onclick = () => openDialog(cpi || host.cpiData()); return b; } },
       });
     } catch (e) { /* non-fatal */ }
   }
-  injectFloatingLauncher();
+  startLauncher();
 })();

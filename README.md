@@ -5,8 +5,8 @@ Integration Suite (Cloud Foundry)** iFlows. Develop with hardcoded values; when 
 reaches a workable state, run the tool once to turn those values into `{{parameters}}` that
 appear on the **Configure** screen.
 
-Ships as a **plugin for a compatible CPI browser-helper extension** (it registers on the
-host's `pluginList` and reuses the host's session, `JSZip`, and toast helpers), plus a
+Ships as a **standalone Chrome extension** (bundles the engine + JSZip) that also works as a
+**plugin for a compatible CPI browser-helper extension** when one is present. Plus a
 dependency-free **Node harness** for offline validation.
 
 ## What "externalize" actually does
@@ -24,11 +24,15 @@ The tool works on the **artifact**, not the graphical canvas.
 ## Layout
 
 ```
+manifest.json                         Standalone MV3 extension manifest
+popup.html · icons/                   Toolbar popup + extension icons
+vendor/jszip.min.js                   Bundled zip lib (for the exported-zip path)
 src/engine/engine.js                  Dependency-free core (browser + Node): analyze → apply
-src/plugin/field-externalizer.plugin.js   Host plugin: launcher, review dialog, session fetch
+src/plugin/field-externalizer.plugin.js   Content script: launcher, review dialog, live save
 tools/run-local.mjs                   Node harness (validate against an exported iFlow)
-test/engine.test.mjs                  Regression tests (node --test)
-test/fixtures/                        Sample iFlow used by the tests and harness
+tools/make-icons.mjs · tools/package.mjs  Regenerate icons · build the store zip
+test/engine.test.mjs · test/fixtures/     Regression tests + sample iFlow
+PUBLISHING.md · PRIVACY.md            Chrome Web Store submission guide + privacy policy
 ```
 
 ## Tests
@@ -38,16 +42,17 @@ detection heuristics and the exact `parameters.prop` / `parameters.propdef` byte
 (fresh-create and merge-into-existing), so a future engine change can't silently break the
 output CPI expects.
 
-## Standalone test build (dev)
+## Run it as a standalone extension
 
-For testing without a host extension, this repo also ships a tiny MV3 wrapper
-(`manifest.json` + `dev/jszip.min.js`) that loads the real engine + plugin directly:
+`manifest.json` is a complete MV3 extension that loads `vendor/jszip.min.js`, then
+`src/engine/engine.js`, then the content script (order matters).
 
 1. `chrome://extensions` → Developer mode → **Load unpacked** → this project folder.
-2. Open an iFlow in your tenant → the **⧉ Externalize fields** launcher appears (bottom-right).
+2. Open an SAP Integration Suite iFlow in the editor → the **⧉ Externalize fields** launcher
+   appears bottom-right (only on iFlow editor pages).
 
-The wrapper is dev-only scaffolding — the shipped artifact is still the plugin file. It
-loads `dev/jszip.min.js`, then `src/engine/engine.js`, then the plugin (order matters).
+To publish on the Chrome Web Store: `node tools/package.mjs` builds the upload zip; follow
+[`PUBLISHING.md`](PUBLISHING.md). Regenerate icons with `node tools/make-icons.mjs`.
 
 ## Install as a plugin
 

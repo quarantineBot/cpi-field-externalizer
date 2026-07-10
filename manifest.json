@@ -1,21 +1,35 @@
 {
   "manifest_version": 3,
-  "name": "iFlow Field Externalizer (dev test)",
-  "version": "0.4.0",
-  "description": "Standalone test wrapper: loads the externalizer plugin without a host extension. For dev testing only — the shipped artifact is the plugin file.",
+  "name": "iFlow Field Externalizer",
+  "version": "1.0.0",
+  "description": "Externalize hardcoded fields (URLs, hosts, credentials) in SAP Integration Suite iFlows to {{parameters}} — right in the editor.",
   "permissions": ["storage"],
-  "host_permissions": [
-    "https://*.hana.ondemand.com/*",
-    "https://*.platform.sapcloud.cn/*"
-  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "iFlow Field Externalizer",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
   "content_scripts": [
     {
       "matches": [
-        "https://*.hana.ondemand.com/*",
-        "https://*.platform.sapcloud.cn/*"
+        "https://*.hana.ondemand.com/shell/*",
+        "https://*.hana.ondemand.com/itspaces/*",
+        "https://*.platform.sapcloud.cn/shell/*",
+        "https://*.platform.sapcloud.cn/itspaces/*"
       ],
       "js": [
-        "dev/jszip.min.js",
+        "vendor/jszip.min.js",
         "src/engine/engine.js",
         "src/plugin/field-externalizer.plugin.js"
       ],
