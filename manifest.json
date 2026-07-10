@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "iFlow Field Externalizer (dev test)",
+  "version": "0.4.0",
+  "description": "Standalone test wrapper: loads the externalizer plugin without a host extension. For dev testing only — the shipped artifact is the plugin file.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://*.hana.ondemand.com/*",
+    "https://*.platform.sapcloud.cn/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.hana.ondemand.com/*",
+        "https://*.platform.sapcloud.cn/*"
+      ],
+      "js": [
+        "dev/jszip.min.js",
+        "src/engine/engine.js",
+        "src/plugin/field-externalizer.plugin.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

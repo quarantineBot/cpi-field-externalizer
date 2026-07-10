@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# local test output
+test/out/
+
+# tenant captures / backups — may contain real endpoint/credential data, never commit
+*.har
+put-body*.json
+*.model-backup.json
+*.externalized.zip
