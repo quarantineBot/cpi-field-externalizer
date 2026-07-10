@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Store Screenshot Framer — iFlow Field Externalizer</title>
+    <style>
+      body { font: 14px/1.5 system-ui, Arial, sans-serif; margin: 0; padding: 20px; background: #eef1f5; color: #222; }
+      h1 { font-size: 16px; color: #0a6ed1; margin: 0 0 14px; }
+      .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+      button, select, input[type=text] { font: 14px system-ui; padding: 6px 10px; border: 1px solid #bbb; border-radius: 6px; background: #fff; }
+      button { cursor: pointer; }
+      button.primary { background: #0a6ed1; color: #fff; border: none; }
+      button.primary:disabled { background: #9bbce0; cursor: default; }
+      label { font-weight: 600; }
+      canvas { max-width: 100%; border: 1px solid #ccc; border-radius: 8px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.12); }
+      .hint { color: #666; font-size: 12px; max-width: 720px; }
+    </style>
+  </head>
+  <body>
+    <h1>⧉ Chrome Web Store screenshot framer</h1>
+    <div class="row">
+      <label>Screenshot: <input type="file" id="file" accept="image/*" /></label>
+      <label>Size:
+        <select id="size">
+          <option value="1280x800">1280 × 800</option>
+          <option value="640x400">640 × 400</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label>Caption (optional): <input type="text" id="cap" size="52" placeholder="Externalize hardcoded iFlow fields in one click" /></label>
+      <button class="primary" id="dl" disabled>Download PNG</button>
+    </div>
+    <p class="hint">Choose your screenshot, then Download. It's scaled and centered on a clean
+      canvas at the exact dimensions the Web Store requires, with a soft backdrop and a card
+      shadow. Runs entirely locally in your browser — nothing is uploaded.</p>
+    <canvas id="cv" width="1280" height="800"></canvas>
+    <script>
+      const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+      let img = null;
+      const dims = () => { const [w, h] = document.getElementById('size').value.split('x').map(Number); return { W: w, H: h }; };
+      function roundRect(c, x, y, w, h, r) {
+        c.beginPath(); c.moveTo(x + r, y);
+        c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+        c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+      }
+      function render() {
+        const { W, H } = dims(); cv.width = W; cv.height = H;
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#eaf2fb'); g.addColorStop(1, '#d8e4f1');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        const cap = document.getElementById('cap').value.trim();
+        const capH = cap ? Math.round(H * 0.12) : 0;
+        if (cap) {
+          ctx.fillStyle = '#0a6ed1'; ctx.font = '600 ' + Math.round(H * 0.045) + 'px system-ui, Arial';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(cap, W / 2, capH * 0.55);
+        }
+        if (!img) {
+          ctx.fillStyle = '#8a93a6'; ctx.font = '500 ' + Math.round(H * 0.03) + 'px system-ui';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('Choose a screenshot to frame…', W / 2, H / 2);
+          return;
+        }
+        const pad = Math.round(W * 0.05);
+        const availW = W - pad * 2, availH = H - pad * 2 - capH;
+        const s = Math.min(availW / img.width, availH / img.height);
+        const w = img.width * s, h = img.height * s;
+        const x = (W - w) / 2, y = capH + (H - capH - h) / 2;
+        const r = Math.round(W * 0.008);
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,.22)'; ctx.shadowBlur = Math.round(W * 0.018); ctx.shadowOffsetY = Math.round(H * 0.012);
+        roundRect(ctx, x, y, w, h, r); ctx.fillStyle = '#fff'; ctx.fill();
+        ctx.restore();
+        ctx.save(); roundRect(ctx, x, y, w, h, r); ctx.clip(); ctx.drawImage(img, x, y, w, h); ctx.restore();
+      }
+      document.getElementById('file').onchange = (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        const rd = new FileReader();
+        rd.onload = () => { img = new Image(); img.onload = () => { render(); document.getElementById('dl').disabled = false; }; img.src = rd.result; };
+        rd.readAsDataURL(f);
+      };
+      document.getElementById('size').onchange = render;
+      document.getElementById('cap').oninput = render;
+      document.getElementById('dl').onclick = () => {
+        cv.toBlob((b) => {
+          const { W, H } = dims();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(b); a.download = `store-screenshot-${W}x${H}.png`; a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+        }, 'image/png');
+      };
+      render();
+    </script>
+  </body>
+</html>
