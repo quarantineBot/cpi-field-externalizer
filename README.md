@@ -9,6 +9,16 @@ Ships as a **standalone Chrome extension** (bundles the engine + JSZip) that als
 **plugin for a compatible CPI browser-helper extension** when one is present. Plus a
 dependency-free **Node harness** for offline validation.
 
+## In action
+
+Open an iFlow, review the hardcoded fields the tool finds (auto-detected ones are pre-ticked;
+tick any others), and apply — the parameters land on the **Externalized Parameters** /
+Configure screen, ready to set per environment.
+
+![Review and pick the fields to externalize](docs/screenshots/review-dialog.png)
+
+![Externalized parameters, ready to configure per environment](docs/screenshots/externalized-parameters.png)
+
 ## What "externalize" actually does
 
 It is not a UI gesture — it's three edits inside the iFlow project zip:
