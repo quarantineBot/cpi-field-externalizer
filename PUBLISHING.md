@@ -32,18 +32,59 @@ Dashboard → **Add new item** → upload the zip. Then complete:
   (use a demo/throwaway iFlow — **no client data**).
 - **Privacy policy URL:** your hosted `docs/index.html` (e.g. the GitHub Pages URL above).
 
-### Privacy practices (Dashboard → Privacy tab)
-- **Single purpose:** "Externalize hardcoded configuration values in SAP Integration Suite
-  integration flows into configurable parameters."
-- **Permission justifications:**
-  - `storage` — "Persist the user's own settings (optional API path prefix) locally."
-  - Host access (`*.hana.ondemand.com`, `*.platform.sapcloud.cn`) — "Read and modify the
-    integration flow the user is actively editing, on the same tenant page, via that tenant's
-    same-origin design-time API. No other sites are accessed."
-- **Data usage:** declare **no data collected**; confirm it is not sold or transferred, and
-  is used only for the single purpose. (All processing is local.)
-- **Remote code:** **No** — everything (including `vendor/jszip.min.js`) is bundled; nothing
-  is fetched and executed at runtime.
+### Privacy tab (paste these verbatim)
+
+**Are you using remote code?** → **No, I am not using remote code.** Everything the extension
+runs (`vendor/jszip.min.js`, the engine, the content script) is bundled in the package — no
+external `<script>` tags, no remotely-loaded modules, no `eval()` of fetched code. (Selecting
+"Yes" here is incorrect and triggers a heavier review.)
+
+**Single purpose description:**
+
+> iFlow Field Externalizer has one narrow purpose: it helps a developer replace hardcoded
+> values (URLs, hostnames, credential names, location IDs, ports) in the SAP Integration Suite
+> integration flow they are editing with externalized {{parameters}}, so those values can be
+> configured per environment on the flow's Configure screen. It adds an "Externalize fields"
+> button to the integration flow editor that lists the flow's Content Modifier and adapter
+> fields, lets the user choose which to externalize and name them, and writes the change back
+> to the same flow using the tenant's own design-time API. It does nothing else.
+
+**Storage justification:**
+
+> The `storage` permission is used only to save the user's own preference locally on their
+> device — an optional "API path prefix" setting used to locate the tenant's design-time API.
+> No flow content, personal data, or credentials are stored, and nothing is synced or
+> transmitted. It uses chrome.storage.local only.
+
+**Host permission justification:**
+
+> The extension runs only on SAP Integration Suite integration-flow editor pages
+> (`*.hana.ondemand.com` and `*.platform.sapcloud.cn`, under `/shell/*` and `/itspaces/*`). It
+> needs a content script there to (1) add the "Externalize fields" button to the flow editor
+> and (2) read and modify the integration flow the user is currently editing by calling that
+> same tenant's own design-time API, on the same origin, using the user's existing logged-in
+> session. It makes no cross-origin requests and accesses no other websites. This access is
+> essential to the single purpose — the extension cannot function anywhere other than the SAP
+> Integration Suite editor page.
+
+**Data collection:** declare **no user data collected**, and tick the certifications that you
+do **not** sell or transfer user data to third parties, do **not** use it for purposes
+unrelated to the single purpose, and do **not** use it to determine creditworthiness or for
+lending. (All processing is local; nothing is collected.)
+
+### Test instructions (Access tab)
+
+Reviewers can't fully test without an SAP tenant, so paste this to avoid a "couldn't verify"
+rejection:
+
+> This extension only activates inside the SAP Integration Suite (Cloud Integration)
+> integration-flow editor, which requires an SAP BTP account with Integration Suite — it
+> cannot be exercised on a generic web page. To review: open any integration flow in the
+> editor on an SAP Integration Suite tenant; an "Externalize fields" button appears at the
+> bottom-right. Clicking it lists the flow's hardcoded Content Modifier and adapter fields to
+> externalize. The extension makes no calls to any non-SAP domain and stores no data — all
+> behavior is confined to the SAP editor page and that tenant's own same-origin API. A demo
+> walkthrough can be provided via the GitHub repository issues on request.
 
 ## Demo data for screenshots (never use real client values)
 Build a throwaway iFlow named e.g. `Demo_OrderSync` (HTTPS sender → Content Modifier → OData
