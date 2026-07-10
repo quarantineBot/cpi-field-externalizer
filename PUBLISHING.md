@@ -45,6 +45,31 @@ Dashboard → **Add new item** → upload the zip. Then complete:
 - **Remote code:** **No** — everything (including `vendor/jszip.min.js`) is bundled; nothing
   is fetched and executed at runtime.
 
+## Demo data for screenshots (never use real client values)
+Build a throwaway iFlow named e.g. `Demo_OrderSync` (HTTPS sender → Content Modifier → OData
+receiver) with these dummy values, so the review dialog looks realistic without leaking any
+tenant/client config. Use `example.com` hosts (reserved for docs). "(det)" = auto-detected,
+pre-ticked; "(man)" = shown only under "Show all constant fields".
+
+| Where | Field | Demo value | Shows as |
+|---|---|---|---|
+| Content Modifier · header | Content-Type | `application/json` | man |
+| Content Modifier · header | Accept | `application/json` | man |
+| Content Modifier · property | TargetSystemUrl | `https://api.demo-erp.example.com/v1` | det (URL) |
+| OData adapter | address | `https://erp.demo.example.com/sap/opu/odata/sap/API_DEMO_SRV/` | det (URL) |
+| OData adapter | alias | `DEMO_ODATA_CRED` | det (credential) |
+| OData adapter | scc_location_id | `demo-cloud-connector` | det (location) |
+| OData adapter | resourcePath | `A_DemoSalesOrder` | det (path) |
+| OData adapter | receiveTimeOut | `60` | det (numeric) |
+| OData adapter | pagination | `0` | man |
+| OData adapter | contentType | `application/atom+xml` | man |
+| OData adapter | metadataAllowedHeaders | `sap-client=100` | man |
+| OData adapter | proxyType | `sapcc` | man |
+| OData adapter | isCSRFEnabled | `true` | man |
+
+No red-scribble redaction needed with demo data — the iFlow name can be shown. Frame the
+capture with `tools/screenshot.html`.
+
 ## 3. Submit for review
 Expect anywhere from a day to ~2 weeks. Broad host access invites scrutiny — the
 justification above and the local-only data story are what reviewers look for.
