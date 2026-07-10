@@ -145,7 +145,15 @@ design as they're usually structural, not environment config.
 
 ## Compatibility note
 
-This is designed for a popular open-source CPI browser-helper extension's plugin framework.
-Field externalization is out of that project's scope; this plugin fills that gap while
-reusing the framework's session and UI plumbing. It uses only the framework's public plugin
-contract and carries no code from it.
+Also works as a plugin for a popular open-source CPI browser-helper extension: field
+externalization is out of that project's scope, so this fills the gap when that extension is
+present, reusing its session/UI plumbing via the public plugin contract only — no code from
+it is included.
+
+Not affiliated with or endorsed by SAP. "SAP" and "Integration Suite" are trademarks of SAP
+SE, used only to describe compatibility.
+
+## License
+
+[MIT](LICENSE) © 2026 quarantineBot. Privacy policy: [`docs/index.html`](docs/index.html)
+(hostable on GitHub Pages).

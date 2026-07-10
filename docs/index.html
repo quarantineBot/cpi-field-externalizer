@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — iFlow Field Externalizer</title>
+    <meta name="robots" content="index,follow" />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font: 16px/1.6 -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        max-width: 720px; margin: 0 auto; padding: 40px 22px 64px; color: #1a1a1a; background: #fff;
+      }
+      @media (prefers-color-scheme: dark) { body { color: #e6e6e6; background: #16181d; } code { background: #2a2d34; } a { color: #6db3ff; } .muted { color: #9aa0aa; } h1 { color: #4c9aff; } }
+      h1 { font-size: 26px; color: #0a6ed1; margin: 0 0 4px; }
+      h2 { font-size: 18px; margin: 28px 0 8px; }
+      code { background: #f0f0f0; padding: 1px 5px; border-radius: 4px; font-size: 90%; }
+      .muted { color: #666; font-size: 14px; }
+      ul { padding-left: 22px; }
+      li { margin: 5px 0; }
+      footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #8884; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>⧉ iFlow Field Externalizer</h1>
+    <p class="muted">Privacy Policy · last updated 9 July 2026</p>
+
+    <p><strong>iFlow Field Externalizer</strong> ("the extension") helps developers replace
+      hardcoded values in SAP Integration Suite integration flows with externalized
+      <code>{{parameters}}</code>. This policy explains what it does and does not do with data.</p>
+
+    <h2>What the extension accesses</h2>
+    <ul>
+      <li>It activates only on SAP Integration Suite editor pages you open
+        (<code>*.hana.ondemand.com</code>, <code>*.platform.sapcloud.cn</code>).</li>
+      <li>When you click <strong>Externalize fields</strong>, it reads and modifies the
+        <strong>currently open integration flow</strong> using <strong>your existing
+        authenticated browser session</strong>, via the tenant's own same-origin design-time
+        API. It has no credentials of its own.</li>
+    </ul>
+
+    <h2>What it does not do</h2>
+    <ul>
+      <li><strong>No data is collected, stored on remote servers, transmitted to third
+        parties, or sent to the developer.</strong> All processing happens locally in your
+        browser, within your tenant session.</li>
+      <li>No analytics, no tracking, no telemetry, no advertising.</li>
+      <li>Your data is never sold or transferred.</li>
+    </ul>
+
+    <h2>Local storage</h2>
+    <ul>
+      <li>Chrome's local <code>storage</code> is used only to keep your own settings (e.g. an
+        optional API path prefix) on your device.</li>
+      <li>A JSON backup of the flow model is downloaded to your computer by you before a save,
+        and is never uploaded anywhere.</li>
+    </ul>
+
+    <h2>Permissions</h2>
+    <ul>
+      <li><code>storage</code> — save your settings locally.</li>
+      <li>Host access to the SAP Integration Suite domains above — read and modify the iFlow
+        you are actively editing, on the same page you have open. No other sites are accessed.</li>
+    </ul>
+
+    <h2>Contact</h2>
+    <p>Questions or concerns: open an issue at
+      <a href="https://github.com/quarantineBot/cpi-field-externalizer/issues">the project's
+      GitHub repository</a>.</p>
+
+    <footer class="muted">
+      Not affiliated with or endorsed by SAP. "SAP" and "Integration Suite" are trademarks of
+      SAP SE, used here only to describe compatibility.
+    </footer>
+  </body>
+</html>

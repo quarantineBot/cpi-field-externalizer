@@ -1,11 +1,14 @@
 {
   "name": "cpi-field-externalizer",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Auto-externalize hardcoded fields (URLs, hosts, credentials, paths) in SAP Integration Suite iFlows.",
+  "license": "MIT",
   "scripts": {
     "externalize": "node tools/run-local.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "icons": "node tools/make-icons.mjs",
+    "package": "node tools/package.mjs"
   },
   "private": true
 }

@@ -29,4 +29,7 @@ SAP Integration Suite integration flows with externalized `{{parameters}}`.
   are actively editing, on the same page you have open. No other sites are accessed.
 
 ## Contact
-Questions: <add your email or GitHub issues URL before publishing>.
+Questions or concerns: open an issue at
+<https://github.com/quarantineBot/cpi-field-externalizer/issues>.
+
+_A formatted, hostable version of this policy lives at `docs/index.html` (for GitHub Pages)._

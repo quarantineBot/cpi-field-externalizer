@@ -4,10 +4,13 @@ A practical checklist for releasing **iFlow Field Externalizer** as an independe
 
 ## 0. Before you start
 - **Developer account** — register once at the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) (one-time **US$5** fee).
-- **Host the privacy policy** — publish `PRIVACY.md` at a public URL (GitHub Pages, a Gist, or
-  any site) and fill in your contact. You'll paste that URL in the listing. A privacy policy
-  is **required** because the extension has host access.
-- Fill in the contact line in `PRIVACY.md`.
+- **Host the privacy policy** — a ready-to-host page is at `docs/index.html`. A privacy
+  policy URL is **required** because the extension has host access. Easiest option:
+  - GitHub Pages → Settings → Pages → Source: `main` branch, `/docs` folder. Your URL becomes
+    `https://quarantinebot.github.io/cpi-field-externalizer/`.
+  - Note: **GitHub Pages needs a public repo** on free plans (private-repo Pages requires
+    GitHub Pro). If you keep the repo private, host `docs/index.html` as a Gist or on any
+    static host instead.
 
 ## 1. Build the upload package
 ```
@@ -27,7 +30,7 @@ Dashboard → **Add new item** → upload the zip. Then complete:
 - **Icon:** `icons/icon128.png` (store shows 128px). **Screenshots:** 1280×800 or 640×400 —
   capture the review dialog on an iFlow and the Configure screen with the new parameters
   (use a demo/throwaway iFlow — **no client data**).
-- **Privacy policy URL:** your hosted `PRIVACY.md`.
+- **Privacy policy URL:** your hosted `docs/index.html` (e.g. the GitHub Pages URL above).
 
 ### Privacy practices (Dashboard → Privacy tab)
 - **Single purpose:** "Externalize hardcoded configuration values in SAP Integration Suite
