@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 // engine.js is environment-agnostic; importing it populates the global.
 await import('../src/engine/engine.js');
-const { analyze, apply, classify, analyzeModel, applyModel } = globalThis.__CpixEngine;
+const { analyze, apply, classify, analyzeModel, applyModel, readParameters, applyParameterValues } = globalThis.__CpixEngine;
 
 const IFLW_PATH = 'src/main/resources/scenarioflows/integrationflow/x.iflw';
 
@@ -331,4 +331,27 @@ test('applyModel: externalizes an adapter field with a DEFAULT_CHANNEL ref', () 
   assert.equal(ref.bindingPath, '/allAttributes/address/value/0/value');
   assert.equal(entry.isTable, undefined);                 // no isTable for adapters
   assert.equal(makeChannelModel().listOfExternalizedPropertiesModel.length, 0); // input not mutated
+});
+
+// ---- Parameter Value Manager: read + apply values -------------------------
+test('readParameters + applyParameterValues on a Content Modifier param', () => {
+  const cm = applyModel(makeModel(), analyzeModel(makeModel()).candidates.map((c) => ({ id: c.id, paramName: c.suggestedName }))).model;
+  const cred = readParameters(cm).find((p) => p.name === 'credentialName');
+  assert.ok(cred);
+  assert.equal(cred.value, 'ACME_CRED');
+  assert.deepEqual(cred.refs[0], { kind: 'step', name: 'Set Target', detail: 'header' }); // where-used via key scan
+
+  const { model, applied } = applyParameterValues(cm, { credentialName: 'NEW_CRED' });
+  assert.deepEqual(applied, [{ name: 'credentialName', from: 'ACME_CRED', to: 'NEW_CRED' }]);
+  assert.equal(model.propertyViewModel.listOfDefaultFlowElementModel[0].allTableAttributes.headerTable.value[1].Value.value, 'NEW_CRED');
+  assert.equal(model.listOfExternalizedPropertiesModel.find((e) => e.propertyObj.key === 'credentialName').propertyObj.value, 'NEW_CRED');
+  assert.equal(applyParameterValues(cm, { credentialName: 'ACME_CRED' }).applied.length, 0); // no-op when unchanged
+});
+
+test('readParameters + applyParameterValues on an adapter param', () => {
+  const m = applyModel(makeChannelModel(), [{ id: 'ch:0:address', paramName: 'OData_address' }]).model;
+  const p = readParameters(m).find((x) => x.name === 'OData_address');
+  assert.deepEqual(p.refs[0], { kind: 'adapter', name: 'OData', detail: 'address' });
+  const { model } = applyParameterValues(m, { OData_address: 'https://x.example.com' });
+  assert.equal(model.propertyViewModel.listOfDefaultChannelModel[0].allAttributes.address.value, 'https://x.example.com');
 });

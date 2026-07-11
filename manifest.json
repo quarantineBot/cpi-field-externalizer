@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "iFlow Field Externalizer",
-  "version": "1.0.0",
-  "description": "Externalize hardcoded fields (URLs, hosts, credentials) in SAP Integration Suite iFlows to {{parameters}} — right in the editor.",
+  "version": "1.1.0",
+  "description": "Externalize hardcoded fields in SAP Integration Suite iFlows to {{parameters}}, and manage parameter values — right in the editor.",
   "permissions": ["storage"],
   "icons": {
     "16": "icons/icon16.png",
@@ -31,6 +31,7 @@
       "js": [
         "vendor/jszip.min.js",
         "src/engine/engine.js",
+        "src/engine/pvm.js",
         "src/plugin/field-externalizer.plugin.js"
       ],
       "run_at": "document_idle"

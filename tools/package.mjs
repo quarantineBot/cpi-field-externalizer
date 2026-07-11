@@ -22,6 +22,7 @@ const SHIPPED = [
   'icons/icon128.png',
   'vendor/jszip.min.js',
   'src/engine/engine.js',
+  'src/engine/pvm.js',
   'src/plugin/field-externalizer.plugin.js',
 ];
 
