@@ -421,7 +421,10 @@
       const po = e && e.propertyObj;
       if (!po || !po.key || seen.has(po.key)) continue;
       seen.add(po.key);
-      out.push({ name: po.key, value: po.value != null ? String(po.value) : '', dataType: po.dataType || 'xsd:string', refs: where[po.key] || [] });
+      const value = po.value != null ? String(po.value) : '';
+      const def = po.defaultValue != null ? String(po.defaultValue) : '';
+      const configured = !!(po.additionalMetadata && po.additionalMetadata.Configured === 'true');
+      out.push({ name: po.key, value, default: def, configured, dataType: po.dataType || 'xsd:string', refs: where[po.key] || [] });
     }
     return out;
   }
@@ -442,8 +445,27 @@
     return { model: out, applied };
   }
 
+  // Set per-environment CONFIGURED values: overrides propertyObj.value while KEEPING
+  // defaultValue (the design default), flagging additionalMetadata.Configured. The underlying
+  // field cell is left at its default — the override lives in the externalized-parameter entry.
+  function applyConfiguredValues(model, values) {
+    const out = structuredClone(model);
+    const applied = [];
+    for (const e of out.listOfExternalizedPropertiesModel || []) {
+      const po = e && e.propertyObj;
+      if (!po || !(po.key in values)) continue;
+      const to = String(values[po.key]);
+      const from = po.value != null ? String(po.value) : '';
+      po.value = to;
+      po.isModified = true;
+      po.additionalMetadata = Object.assign({}, po.additionalMetadata, { Configured: 'true' });
+      if (from !== to) applied.push({ name: po.key, from, to });
+    }
+    return { model: out, applied };
+  }
+
   // ======================================================================
-  const api = { analyze, apply, classify, scanProperties, findIflowPath, analyzeModel, applyModel, readParameters, applyParameterValues };
+  const api = { analyze, apply, classify, scanProperties, findIflowPath, analyzeModel, applyModel, readParameters, applyParameterValues, applyConfiguredValues };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.__CpixEngine = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
