@@ -9,10 +9,6 @@ Ships as a **standalone Chrome extension** (bundles the engine + JSZip) that als
 **plugin for a compatible CPI browser-helper extension** when one is present. Plus a
 dependency-free **Node harness** for offline validation.
 
-It also includes a **Parameter Value Manager** — view/edit externalized-parameter values,
-import/export environment profiles (JSON/CSV), and save in place. See
-[docs/PARAMETER-VALUE-MANAGER.md](docs/PARAMETER-VALUE-MANAGER.md).
-
 ## In action
 
 Open an iFlow, review the hardcoded fields the tool finds (auto-detected ones are pre-ticked;

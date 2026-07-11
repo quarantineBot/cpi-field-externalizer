@@ -32,7 +32,6 @@
     cpiData() { return typeof cpiData !== 'undefined' ? cpiData : null; },
   };
   const engine = () => (typeof window !== 'undefined' && window.__CpixEngine) || (typeof globalThis !== 'undefined' && globalThis.__CpixEngine) || null;
-  const pvm = () => (typeof window !== 'undefined' && window.__CpixPVM) || (typeof globalThis !== 'undefined' && globalThis.__CpixPVM) || null;
 
   // ---- context -------------------------------------------------------------
   function detectCtx(cpi) {
@@ -87,16 +86,6 @@
     const h = encodeURIComponent(ids.artHash);
     const url = `${apiRoot}/workspace/${encodeURIComponent(ids.wsHash)}/artifacts/${h}/entities/${h}/drafts/${encodeURIComponent(ids.iflowName)}?type=iflow`;
     try { await fetch(url, { method: 'DELETE', credentials: 'include', headers: { 'X-CSRF-Token': csrf || '' } }); } catch (e) { /* best effort */ }
-  }
-  // Save per-environment CONFIGURED values (the "Configure" flow): a QC model PUT + a runtime-
-  // configurations PUT. Same-origin, session-authenticated; no draft delete.
-  async function saveConfiguration(apiRoot, ids, model, csrf) {
-    const h = encodeURIComponent(ids.artHash), ws = encodeURIComponent(ids.wsHash), name = encodeURIComponent(ids.iflowName);
-    const H = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-Token': csrf || '' };
-    const r1 = await fetch(`${apiRoot}/workspace/${ws}/artifacts/${h}/entities/${h}/iflows/${name}?view=QC&artifactType=IFlow&configRuntimeLocationId=iflmap`, { method: 'PUT', credentials: 'include', headers: H, body: JSON.stringify(model) });
-    if (!r1.ok) { const t = await r1.text().catch(() => ''); throw new Error(`Configure save failed (${r1.status}). ${t.slice(0, 140)}`); }
-    const r2 = await fetch(`${apiRoot}/workspace/artifacts/runtimeconfigurations/${h}`, { method: 'PUT', credentials: 'include', headers: H, body: JSON.stringify({ profile: 'iflmap', virtualHostNames: [], iflowModelTO: model }) });
-    if (!r2.ok) { const t = await r2.text().catch(() => ''); throw new Error(`Runtime config save failed (${r2.status}). ${t.slice(0, 140)}`); }
   }
 
   // ---- zip <-> files map (host JSZip; exported-zip path) -------------------
@@ -224,87 +213,6 @@
     });
   }
 
-  // ---- parameter value manager (live) -------------------------------------
-  async function runValues(ui, ctx) {
-    host.working(true);
-    let ids, model;
-    try { ids = await resolveIds(ctx); model = await getModel(ctx.apiRoot, ids); }
-    finally { host.working(false); }
-    renderValues(ui, ctx, ids, model, engine().readParameters(model));
-  }
-
-  function renderValues(ui, ctx, ids, model, params, mode) {
-    mode = mode || 'default';
-    const isCfg = mode === 'configured';
-    const { back, body, foot } = ui;
-    body.innerHTML = ''; foot.innerHTML = '';
-    body.appendChild(el('p', { innerHTML: `${esc(ids.iflowName)} — ${params.length} externalized parameter(s). ` + (isCfg ? 'Editing <strong>configured</strong> values (per-environment overrides; design defaults kept).' : 'Editing <strong>default</strong> values (the artifact defaults).') }));
-    if (!params.length) {
-      body.appendChild(el('p', { textContent: 'No externalized parameters found — externalize some fields first.' }, { color: '#777' }));
-      const done = el('button', { textContent: 'Close' }, { padding: '8px 14px', cursor: 'pointer' }); done.onclick = () => back.remove(); foot.appendChild(done); return;
-    }
-    const toggle = el('div', {}, { margin: '2px 0 12px' });
-    const modeBtn = (m, label) => { const b = el('button', { textContent: label }, { padding: '5px 10px', marginRight: '6px', borderRadius: '5px', cursor: 'pointer', font: '12px Arial', border: '1px solid ' + (mode === m ? '#0a6ed1' : '#bbb'), background: mode === m ? '#0a6ed1' : '#fff', color: mode === m ? '#fff' : '#333' }); b.onclick = () => renderValues(ui, ctx, ids, model, params, m); return b; };
-    toggle.append(el('span', { textContent: 'Target: ' }, { color: '#555' }), modeBtn('default', 'Default values'), modeBtn('configured', 'Configured values'));
-    body.appendChild(toggle);
-
-    const orig = {}; params.forEach((p) => { orig[p.name] = isCfg ? p.value : p.default; });
-    const table = el('table', {}, { width: '100%', borderCollapse: 'collapse' });
-    const cols = isCfg ? ['Parameter', 'Configured value', 'Default', 'Where'] : ['Parameter', 'Default value', 'Where', 'Type'];
-    table.innerHTML = '<thead><tr>' + cols.map((h) => `<th style="text-align:left;padding:6px;border-bottom:2px solid #ddd">${h}</th>`).join('') + '</tr></thead>';
-    const tb = el('tbody');
-    const cell = (h) => el('td', { innerHTML: h }, { padding: '6px', borderBottom: '1px solid #eee', verticalAlign: 'top' });
-    const where = (p) => p.refs.map((r) => `${esc(r.name || '—')} <span style="color:#999">(${esc(r.kind)}: ${esc(r.detail)})</span>`).join('<br>') || '<span style="color:#aaa">—</span>';
-    const rows = params.map((p) => {
-      const tr = el('tr');
-      const inp = el('input', { type: 'text', value: orig[p.name] }, { width: '300px', font: '12px monospace' });
-      inp.oninput = () => { tr.style.background = inp.value !== orig[p.name] ? '#fff7e6' : ''; };
-      const c0 = cell(`<code style="font-size:12px">${esc(p.name)}</code>`);
-      const c1 = cell(''); c1.appendChild(inp);
-      if (isCfg) tr.append(c0, c1, cell(`<code style="font-size:11px;color:#888">${esc(p.default)}</code>`), cell(where(p)));
-      else tr.append(c0, c1, cell(where(p)), cell(`<span style="color:#777;font-size:11px">${esc(p.dataType.replace('xsd:', ''))}</span>`));
-      tb.appendChild(tr);
-      return { p, inp };
-    });
-    table.appendChild(tb); body.appendChild(table);
-
-    const currentProfile = () => ({ version: 1, iflow: ids.iflowName, environments: ['value'], parameters: Object.fromEntries(rows.map((r) => [r.p.name, { value: r.inp.value }])) });
-    const importFile = el('input', { type: 'file', accept: '.json,.csv,.txt' }, { display: 'none' });
-    importFile.onchange = async () => {
-      const f = importFile.files[0]; if (!f) return;
-      try {
-        const prof = pvm().parseProfile(await f.text());
-        let env = prof.environments[0];
-        if (prof.environments.length > 1) env = prompt(`Which environment column to import?\n${prof.environments.join(', ')}`, env) || env;
-        const vals = pvm().valuesForEnv(prof, env);
-        let n = 0; rows.forEach((r) => { if (vals[r.p.name] !== undefined && r.inp.value !== vals[r.p.name]) { r.inp.value = vals[r.p.name]; r.inp.dispatchEvent(new Event('input')); n++; } });
-        host.toast(`Imported "${env}"`, `${n} value(s) changed — review, then Apply.`, 'info');
-      } catch (e) { alert('Import failed: ' + e.message); }
-    };
-    const btn = (label, style, on) => { const b = el('button', { textContent: label }, Object.assign({ padding: '8px 12px', cursor: 'pointer', borderRadius: '5px', border: '1px solid #bbb', background: '#fff' }, style || {})); b.onclick = on; return b; };
-    foot.append(
-      importFile,
-      btn('Import profile', {}, () => importFile.click()),
-      btn('Export JSON', {}, () => downloadText(`${ids.iflowName}.${mode}.json`, pvm().serializeProfile(currentProfile(), 'json'))),
-      btn('Export CSV', {}, () => downloadText(`${ids.iflowName}.${mode}.csv`, pvm().serializeProfile(currentProfile(), 'csv'))),
-      btn(isCfg ? 'Apply configured' : 'Apply defaults', { background: '#107e3e', color: '#fff', border: 'none' }, async () => {
-        const changed = {}; rows.forEach((r) => { if (r.inp.value !== orig[r.p.name]) changed[r.p.name] = r.inp.value; });
-        if (!Object.keys(changed).length) return alert('No values changed.');
-        const { model: next, applied } = isCfg ? engine().applyConfiguredValues(model, changed) : engine().applyParameterValues(model, changed);
-        downloadText(`${ids.iflowName}.model-backup.json`, JSON.stringify(model, null, 2));
-        if (!confirm(`Save ${applied.length} ${isCfg ? 'configured' : 'default'} value(s) to "${ids.iflowName}" and reload the editor?\n\n${applied.map((a) => '• ' + a.name).join('\n')}\n\nA backup of the current model was downloaded. Save any other pending edits first.`)) return;
-        host.working(true);
-        try {
-          const csrf = await getCsrf(ctx.apiRoot);
-          if (isCfg) await saveConfiguration(ctx.apiRoot, ids, next, csrf);
-          else { await putModel(ctx.apiRoot, ids, next, csrf); await deleteDraft(ctx.apiRoot, ids, csrf); }
-          host.toast(`Updated ${applied.length} value(s)`, 'Saved to the iFlow. Reloading…', 'success');
-          back.remove(); setTimeout(() => location.reload(), 900);
-        } catch (e) { host.working(false); alert('Save failed: ' + e.message + '\n\nYour iFlow was not changed. Restore from the downloaded backup if needed.'); }
-      }),
-    );
-  }
-
   // ---- home view -----------------------------------------------------------
   function renderHome(ui, ctx) {
     const { body, foot } = ui;
@@ -317,14 +225,6 @@
     liveBtn.onclick = async () => { status.textContent = ''; try { await runLive(ui, ctx); } catch (e) { status.style.color = '#b00'; status.textContent = e.message; host.working(false); } };
     live.append(liveBtn, status);
     body.appendChild(live);
-
-    const vals = el('div', {}, { marginBottom: '18px' });
-    vals.appendChild(el('div', { innerHTML: '<strong>Manage parameter values (live)</strong> — view/edit externalized-parameter values, import/export a profile, save in place.' }));
-    const valsBtn = el('button', { textContent: ctx.iflowName ? `Manage values for "${ctx.iflowName}"` : 'Open an iFlow in the editor first', disabled: !ctx.iflowName }, { marginTop: '6px', padding: '8px 14px', background: '#6c3fb5', color: '#fff', border: 'none', borderRadius: '5px', cursor: ctx.iflowName ? 'pointer' : 'not-allowed' });
-    const vstatus = el('p', {}, { color: '#b00', minHeight: '16px' });
-    valsBtn.onclick = async () => { vstatus.textContent = ''; try { await runValues(ui, ctx); } catch (e) { vstatus.style.color = '#b00'; vstatus.textContent = e.message; host.working(false); } };
-    vals.append(valsBtn, vstatus);
-    body.appendChild(vals);
 
     const zipWrap = el('div');
     zipWrap.appendChild(el('div', { innerHTML: '<strong>Or work on an exported zip</strong> — load, review, download the externalized zip:' }));
