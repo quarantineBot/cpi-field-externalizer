@@ -348,6 +348,34 @@
     const s = location.hash + ' ' + location.href;
     return /integrationflows?\/[^/?#\s]+/i.test(s) || /artifacts\/[^/?#\s]+/i.test(s);
   }
+
+  // Draggable launcher: click opens the dialog; press-and-drag repositions it anywhere and
+  // remembers the spot. Movement past a small threshold counts as a drag (suppresses the click).
+  const FAB_POS_KEY = 'iflowFieldExt.fabPos';
+  const saveFabPos = (pos) => { try { if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) chrome.storage.local.set({ [FAB_POS_KEY]: pos }); } catch (e) { /* ignore */ } };
+  const restoreFabPos = (fab) => { try { if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) chrome.storage.local.get(FAB_POS_KEY, (o) => { const p = o && o[FAB_POS_KEY]; if (p && p.left != null) Object.assign(fab.style, { left: p.left, top: p.top, right: 'auto', bottom: 'auto' }); }); } catch (e) { /* ignore */ } };
+  function makeDraggable(fab, onClick) {
+    let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false, moved = false;
+    fab.addEventListener('pointerdown', (e) => {
+      dragging = true; moved = false; sx = e.clientX; sy = e.clientY;
+      const r = fab.getBoundingClientRect(); ox = r.left; oy = r.top;
+      try { fab.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      fab.style.cursor = 'grabbing';
+    });
+    fab.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+      const l = Math.max(4, Math.min(window.innerWidth - fab.offsetWidth - 4, ox + dx));
+      const t = Math.max(4, Math.min(window.innerHeight - fab.offsetHeight - 4, oy + dy));
+      Object.assign(fab.style, { left: l + 'px', top: t + 'px', right: 'auto', bottom: 'auto' });
+    });
+    const end = (e) => { if (!dragging) return; dragging = false; fab.style.cursor = 'grab'; try { fab.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ } if (moved) saveFabPos({ left: fab.style.left, top: fab.style.top }); };
+    fab.addEventListener('pointerup', end);
+    fab.addEventListener('pointercancel', end);
+    fab.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; return; } onClick(); });
+  }
+
   let fabEl = null;
   function syncLauncher() {
     if (!document.body) return;
@@ -355,9 +383,10 @@
     if (isIflowEditor()) {
       if (present) return;
       if (!fabEl) {
-        fabEl = el('button', { id: 'iflowFieldExt-fab', type: 'button', textContent: '⧉ Externalize fields' },
-          { position: 'fixed', right: '18px', bottom: '18px', zIndex: '2147483646', padding: '10px 14px', background: '#0a6ed1', color: '#fff', border: 'none', borderRadius: '6px', font: '600 13px Arial, sans-serif', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,.35)' });
-        fabEl.onclick = () => openDialog(host.cpiData());
+        fabEl = el('button', { id: 'iflowFieldExt-fab', type: 'button', textContent: '⧉ Externalize fields', title: 'Drag to move • click to open' },
+          { position: 'fixed', right: '18px', bottom: '18px', zIndex: '2147483646', padding: '10px 14px', background: '#0a6ed1', color: '#fff', border: 'none', borderRadius: '6px', font: '600 13px Arial, sans-serif', cursor: 'grab', boxShadow: '0 2px 10px rgba(0,0,0,.35)', touchAction: 'none', userSelect: 'none' });
+        makeDraggable(fabEl, () => openDialog(host.cpiData()));
+        restoreFabPos(fabEl);
       }
       document.body.appendChild(fabEl);
     } else if (present) {
